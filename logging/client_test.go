@@ -1,7 +1,6 @@
 package logging
 
 import (
-	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
 
 	signer "github.com/philips-software/go-hsdp-signer"
 )
@@ -19,40 +19,40 @@ var (
 	serverLogger  *httptest.Server
 	client        *Client
 	validResource = Resource{
-		ID:                  "deb545e2-ccea-4868-99fe-b9dfbf5ce56e",
+		Id:                  "deb545e2-ccea-4868-99fe-b9dfbf5ce56e",
 		ResourceType:        "LogEvent",
 		ServerName:          "foo.bar.com",
 		ApplicationName:     "some-space",
-		EventID:             "1",
+		EventId:             "1",
 		Category:            "Tracelog",
 		Component:           "PHS",
-		TransactionID:       "5bc4ce05-37b5-4f08-89e4-ed73790f8058",
+		TransactionId:       "5bc4ce05-37b5-4f08-89e4-ed73790f8058",
 		ServiceName:         "mcvs",
 		ApplicationInstance: "85e597cb-2648-4187-78ec-2c58",
 		ApplicationVersion:  "0.0.0",
 		OriginatingUser:     "ActiveUser",
 		LogTime:             "2017-10-15T01:53:20Z",
 		Severity:            "INFO",
-		LogData: LogData{
+		LogData: &LogData{
 			Message: "aGVsbG8gd29ybGQK",
 		},
 	}
 	invalidResource = Resource{
-		ID:                  "deb545e2-ccea-4868-99fe-b9dfbf5ce56e",
+		Id:                  "deb545e2-ccea-4868-99fe-b9dfbf5ce56e",
 		ResourceType:        "LogEvent",
 		ServerName:          "foo.bar.com",
 		ApplicationName:     "some-space",
-		EventID:             "1",
+		EventId:             "1",
 		Category:            "Tracelog",
 		Component:           "PHS",
-		TransactionID:       "",
+		TransactionId:       "",
 		ServiceName:         "mcvs",
 		ApplicationInstance: "85e597cb-2648-4187-78ec-2c58",
 		ApplicationVersion:  "0.0.0",
 		OriginatingUser:     "ActiveUser",
 		LogTime:             "2017-10-15T01:53:20Z",
 		Severity:            "INFO",
-		LogData: LogData{
+		LogData: &LogData{
 			Message: "aGVsbG8gd29ybGQK",
 		},
 	}
@@ -93,7 +93,7 @@ func setup(t *testing.T, config Config, method string, statusCode int, responseB
 
 		body, _ := ioutil.ReadAll(r.Body)
 		var bundle Bundle
-		err := json.Unmarshal(body, &bundle)
+		err := jsonpb.Unmarshal(body, &bundle)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -148,8 +148,8 @@ func TestStoreResources(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var resource = []Resource{
-		validResource,
+	var resource = []*Resource{
+		&validResource,
 	}
 
 	resp, err := client.StoreResources(resource, len(resource))
@@ -181,8 +181,8 @@ func TestStoreResourcesWithInvalidKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var resource = []Resource{
-		validResource,
+	var resource = []*Resource{
+		&validResource,
 	}
 
 	resp, err := client.StoreResources(resource, len(resource))
@@ -213,8 +213,8 @@ func TestStoreResourcesWithInvalidKeypair(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var resource = []Resource{
-		validResource,
+	var resource = []*Resource{
+		&validResource,
 	}
 
 	resp, err := client.StoreResources(resource, len(resource))
@@ -248,33 +248,6 @@ func TestConfig(t *testing.T) {
 			teardown()
 		}
 	}
-}
-
-func TestReplaceScaryCharacters(t *testing.T) {
-	var invalidResource = Resource{
-		ResourceType: "LogEvent",
-		Custom: []byte(`{
-	"foo": "bar",
-	"bad1": ";",
-	"bad2": "<key/>",
-	"bad3": "&amp;",
-	"bad4": "a\\b",
-	"bad5": "a\b"
-}`),
-	}
-	replaceScaryCharacters(&invalidResource)
-
-	var custom map[string]interface{}
-	err := json.Unmarshal(invalidResource.Custom, &custom)
-	if !assert.Nil(t, err) {
-		return
-	}
-	assert.Equal(t, "bar", custom["foo"].(string))
-	assert.Equal(t, "[sc]", custom["bad1"].(string))
-	assert.Equal(t, "[lt]key/[gt]", custom["bad2"].(string))
-	assert.Equal(t, "[amp]amp[sc]", custom["bad3"].(string))
-	assert.Equal(t, "a[bsl]b", custom["bad4"].(string))
-	assert.Equal(t, "a[bs]", custom["bad5"].(string))
 }
 
 func TestStoreResourcesWithBadResources(t *testing.T) {
@@ -313,8 +286,8 @@ func TestStoreResourcesWithBadResources(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var resource = []Resource{
-		invalidResource,
+	var resource = []*Resource{
+		&invalidResource,
 	}
 
 	resp, err := client.StoreResources(resource, len(resource))
@@ -327,7 +300,7 @@ func TestStoreResourcesWithBadResources(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	assert.Equal(t, ErrBatchErrors, err)
 
-	resp, err = client.StoreResources([]Resource{validResource}, 1)
+	resp, err = client.StoreResources([]*Resource{&validResource}, 1)
 	if !assert.NotNil(t, err) {
 		return
 	}

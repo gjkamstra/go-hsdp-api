@@ -3,8 +3,8 @@ package logging
 import (
 	"testing"
 
-	"encoding/json"
 	"github.com/stretchr/testify/assert"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
 )
 
 func TestBundle(t *testing.T) {
@@ -51,15 +51,24 @@ func TestBundleEncoding(t *testing.T) {
 		]
 	  }`
 
-	var bundle Bundle
-	err := json.Unmarshal([]byte(payload), &bundle)
+	bundle := &Bundle{}
+	err := jsonpb.Unmarshal([]byte(payload), bundle)
 
-	assert.Equal(t, nil, err)
+	if !assert.Equal(t, nil, err) {
+		return
+	}
+	if !assert.Equal(t, int64(1), bundle.Total) {
+		return
+	}
 	resource := bundle.Entry[0].Resource
 	assert.Equal(t, "SGVsbG8=", resource.LogData.Message)
-	var custom map[string]interface{}
-	err = json.Unmarshal(resource.Custom, &custom)
-	assert.Equal(t, nil, err)
-	inner := custom["key2"].(map[string]interface{})
-	assert.Equal(t, "innervalue", inner["innerkey"].(string))
+	if !assert.Equal(t, nil, err) {
+		return
+	}
+	inner := resource.Custom.Fields["key2"]
+	if !assert.NotNil(t, inner) {
+		return
+	}
+	//inner := resource.Custom.Fields["key2"].
+	//assert.Equal(t, "innervalue", inner["innerkey"].(string))
 }

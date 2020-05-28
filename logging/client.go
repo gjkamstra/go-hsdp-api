@@ -14,10 +14,10 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	"strings"
 
 	signer "github.com/philips-software/go-hsdp-signer"
 	errors "golang.org/x/xerrors"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
@@ -38,21 +38,6 @@ var (
 	ErrResponseError       = errors.New("unexpected HSDP response error")
 
 	entryRegex = regexp.MustCompile(`^entry\[(\d+)]`)
-
-	scaryMap = map[string]string{
-		";":    "[sc]",
-		"&":    "[amp]",
-		">":    "[gt]",
-		"<":    "[lt]",
-		"=":    "[eq]",
-		"\\u":  "[utf]",
-		"\\f":  "[ff]",
-		"\\b":  "[bs]",
-		"\\r":  "[cr]",
-		"\\n":  "[lf]",
-		"\\t":  "[tab]",
-		"\\\"": "[qt]",
-	}
 )
 
 // Config the client
@@ -93,7 +78,7 @@ type Client struct {
 type StoreResponse struct {
 	*http.Response
 	Message string
-	Failed  map[int]Resource
+	Failed  map[int]*Resource
 }
 
 // CustomIndexBody describes the custom index request payload
@@ -187,25 +172,24 @@ func (e *ErrorResponse) Error() string {
 // This also happens in case the HSDP Ingestor API flags resources. In both cases
 // the complete batch should be considered as not persisted and the LogEvents should
 // be resubmitted for storage
-func (c *Client) StoreResources(msgs []Resource, count int) (*StoreResponse, error) {
-	var b Bundle
-	invalid := make(map[int]Resource)
+func (c *Client) StoreResources(msgs []*Resource, count int) (*StoreResponse, error) {
+	b := &Bundle{}
+	invalid := make(map[int]*Resource)
 
 	b.ResourceType = "Bundle"
-	b.Entry = make([]Element, count)
+	b.Entry = make([]*Element, count)
 	b.Type = "transaction"
 	b.ProductKey = c.config.ProductKey
 
 	j := 0
 	for i := 0; i < count; i++ {
 		msg := msgs[i]
-		replaceScaryCharacters(&msg)
 		if !msg.Valid() {
 			invalid[i] = msg
 			continue
 		}
 		// Element
-		var e Element
+		e := new(Element)
 		e.Resource = msg
 		// Base64 encode here
 		e.Resource.LogData.Message = base64.StdEncoding.EncodeToString([]byte(msg.LogData.Message))
@@ -227,7 +211,7 @@ func (c *Client) StoreResources(msgs []Resource, count int) (*StoreResponse, err
 		return nil, ErrNothingToPost
 	}
 
-	b.Total = j
+	b.Total = int64(j)
 
 	req := &http.Request{
 		Method:     http.MethodPost,
@@ -239,11 +223,11 @@ func (c *Client) StoreResources(msgs []Resource, count int) (*StoreResponse, err
 		Host:       c.url.Host,
 	}
 
-	bodyBytes, err := json.Marshal(b)
+	bodyBytes, err := jsonpb.Marshal(b)
 	if err != nil {
 		return nil, err
 	}
-	bodyReader := bytes.NewReader(bodyBytes)
+	bodyReader := bytes.NewBufferString(string(bodyBytes))
 	req.Body = ioutil.NopCloser(bodyReader)
 	req.ContentLength = int64(bodyReader.Len())
 	req.Header.Set("Content-Type", "application/json")
@@ -256,8 +240,8 @@ func (c *Client) StoreResources(msgs []Resource, count int) (*StoreResponse, err
 	return c.performAndParseResponse(req, msgs)
 }
 
-func (c *Client) performAndParseResponse(req *http.Request, msgs []Resource) (*StoreResponse, error) {
-	invalid := make(map[int]Resource)
+func (c *Client) performAndParseResponse(req *http.Request, msgs []*Resource) (*StoreResponse, error) {
+	invalid := make(map[int]*Resource)
 
 	var serverResponse bytes.Buffer
 
@@ -290,16 +274,4 @@ func (c *Client) performAndParseResponse(req *http.Request, msgs []Resource) (*S
 		err = ErrBatchErrors
 	}
 	return storeResp, err
-}
-
-func replaceScaryCharacters(msg *Resource) {
-	if len(msg.Custom) == 0 {
-		return
-	}
-	stringCustom := strings.Replace(string(msg.Custom), "\\\\", "[bsl]", -1)
-
-	for s, r := range scaryMap {
-		stringCustom = strings.Replace(stringCustom, s, r, -1)
-	}
-	msg.Custom = []byte(stringCustom)
 }

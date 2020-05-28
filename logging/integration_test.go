@@ -29,7 +29,7 @@ func TestIntegration(t *testing.T) {
 	if !assert.NotNil(t, intClient) {
 		return
 	}
-	resp, err := intClient.StoreResources([]Resource{validResource}, 1)
+	resp, err := intClient.StoreResources([]*Resource{&validResource}, 1)
 	if !assert.Nil(t, err) {
 		return
 	}
@@ -37,14 +37,14 @@ func TestIntegration(t *testing.T) {
 		return
 	}
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
-	resp, err = intClient.StoreResources([]Resource{
-		validResource,
-		invalidResource,
-		validResource,
-		validResource,
-		invalidResource,
-		validResource,
-		invalidResource}, 7)
+	resp, err = intClient.StoreResources([]*Resource{
+		&validResource,
+		&invalidResource,
+		&validResource,
+		&validResource,
+		&invalidResource,
+		&validResource,
+		&invalidResource}, 7)
 	if !assert.NotNil(t, err) {
 		return
 	}

@@ -48,6 +48,14 @@ func main() {
 
 - If you have an issue: report it on the [issue tracker](https://github.com/philips-software/go-hsdp-api/issues)
 
+## Protobuffers
+
+Run
+
+```
+protoc --proto_path=. --go_out=. --go_opt=paths=source_relative resource.proto
+```
+
 ## Author
 
 Andy Lo-A-Foe (<andy.lo-a-foe@philips.com>)
