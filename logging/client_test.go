@@ -92,6 +92,11 @@ func setup(t *testing.T, config Config, method string, statusCode int, responseB
 		}
 
 		body, _ := ioutil.ReadAll(r.Body)
+		var bodyString = string(body)
+		if bodyString == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		var bundle Bundle
 		err := jsonpb.Unmarshal(body, &bundle)
 		if err != nil {

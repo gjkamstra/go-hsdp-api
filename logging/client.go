@@ -211,7 +211,7 @@ func (c *Client) StoreResources(msgs []*Resource, count int) (*StoreResponse, er
 		return nil, ErrNothingToPost
 	}
 
-	b.Total = int64(j)
+	b.Total = int32(j)
 
 	req := &http.Request{
 		Method:     http.MethodPost,

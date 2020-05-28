@@ -57,7 +57,7 @@ func TestBundleEncoding(t *testing.T) {
 	if !assert.Equal(t, nil, err) {
 		return
 	}
-	if !assert.Equal(t, int64(1), bundle.Total) {
+	if !assert.Equal(t, int32(1), bundle.Total) {
 		return
 	}
 	resource := bundle.Entry[0].Resource
