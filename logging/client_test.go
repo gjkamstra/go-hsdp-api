@@ -15,10 +15,19 @@ import (
 )
 
 var (
-	muxLogger     *http.ServeMux
-	serverLogger  *httptest.Server
-	client        *Client
-	validResource = Resource{
+	muxLogger    *http.ServeMux
+	serverLogger *httptest.Server
+	client       *Client
+)
+
+const (
+	productKey   = "859722b3-64dd-4be8-a522-c2dbf88c86b5"
+	sharedKey    = "SharedKey"
+	sharedSecret = "SharedSecret"
+)
+
+func makeValidResource() *Resource {
+	validResource := &Resource{
 		Id:                  "deb545e2-ccea-4868-99fe-b9dfbf5ce56e",
 		ResourceType:        "LogEvent",
 		ServerName:          "foo.bar.com",
@@ -37,7 +46,11 @@ var (
 			Message: "Hello world",
 		},
 	}
-	invalidResource = Resource{
+	return validResource
+}
+
+func makeInvalidResource() *Resource {
+	invalidResource := &Resource{
 		Id:                  "deb545e2-ccea-4868-99fe-b9dfbf5ce56e",
 		ResourceType:        "LogEvent",
 		ServerName:          "foo.bar.com",
@@ -56,14 +69,8 @@ var (
 			Message: "Hello World",
 		},
 	}
-)
-
-const (
-	productKey   = "859722b3-64dd-4be8-a522-c2dbf88c86b5"
-	sharedKey    = "SharedKey"
-	sharedSecret = "SharedSecret"
-)
-
+	return invalidResource
+}
 func setup(t *testing.T, config Config, method string, statusCode int, responseBody string) (func(), error) {
 	var err error
 
@@ -154,7 +161,7 @@ func TestStoreResources(t *testing.T) {
 	}
 
 	var resource = []*Resource{
-		&validResource,
+		makeValidResource(),
 	}
 
 	resp, err := client.StoreResources(resource, len(resource))
@@ -187,7 +194,7 @@ func TestStoreResourcesWithInvalidKey(t *testing.T) {
 	}
 
 	var resource = []*Resource{
-		&validResource,
+		makeValidResource(),
 	}
 
 	resp, err := client.StoreResources(resource, len(resource))
@@ -219,7 +226,7 @@ func TestStoreResourcesWithInvalidKeypair(t *testing.T) {
 	}
 
 	var resource = []*Resource{
-		&validResource,
+		makeValidResource(),
 	}
 
 	resp, err := client.StoreResources(resource, len(resource))
@@ -292,7 +299,7 @@ func TestStoreResourcesWithBadResources(t *testing.T) {
 	}
 
 	var resource = []*Resource{
-		&invalidResource,
+		makeInvalidResource(),
 	}
 
 	resp, err := client.StoreResources(resource, len(resource))
@@ -305,7 +312,7 @@ func TestStoreResourcesWithBadResources(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	assert.Equal(t, ErrBatchErrors, err)
 
-	resp, err = client.StoreResources([]*Resource{&validResource}, 1)
+	resp, err = client.StoreResources([]*Resource{makeValidResource()}, 1)
 	if !assert.NotNil(t, err) {
 		return
 	}
