@@ -34,7 +34,7 @@ var (
 		LogTime:             "2017-10-15T01:53:20Z",
 		Severity:            "INFO",
 		LogData: &LogData{
-			Message: "aGVsbG8gd29ybGQK",
+			Message: "Hello world",
 		},
 	}
 	invalidResource = Resource{
@@ -53,7 +53,7 @@ var (
 		LogTime:             "2017-10-15T01:53:20Z",
 		Severity:            "INFO",
 		LogData: &LogData{
-			Message: "aGVsbG8gd29ybGQK",
+			Message: "Hello World",
 		},
 	}
 )
