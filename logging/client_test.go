@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	signer "github.com/philips-software/go-hsdp-signer"
 )
@@ -46,6 +47,10 @@ func makeValidResource() *Resource {
 			Message: "Hello world",
 		},
 	}
+	c := validResource.Custom.ProtoReflect()
+	c.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		return true
+	})
 	return validResource
 }
 
