@@ -1,5 +1,5 @@
-// Package credentials provides support for HSDP S3 Credentials
-package credentials
+// Package cce provides support for CCE
+package cce
 
 import (
 	"bytes"
@@ -13,7 +13,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/google/go-querystring/query"
 	"github.com/philips-software/go-hsdp-api/fhir"
 	"github.com/philips-software/go-hsdp-api/iam"
@@ -21,7 +20,10 @@ import (
 
 const (
 	libraryVersion = "0.23.0"
-	userAgent      = "go-hsdp-api/credentials/" + libraryVersion
+	userAgent      = "go-hsdp-api/cce/" + libraryVersion
+	DiscoveryPath  = ".well-known/cce-configuration"
+	iamTokenPath   = "/authorize/oauth2/token"
+	APIVersion     = "1"
 )
 
 // OptionFunc is the function signature function for options
@@ -29,59 +31,134 @@ type OptionFunc func(*http.Request) error
 
 // Config contains the configuration of a client
 type Config struct {
-	BaseURL  string
-	Debug    bool
-	DebugLog string
+	client     *http.Client
+	ServiceID  string
+	PrivateKey string
+	BaseURL    string
+	Debug      bool
+	DebugLog   string
+}
+
+type DiscoveryEndpoints struct {
+	TokenEndpoint         string `json:"token_endpoint"`
+	IntrospectionEndpoint string `json:"introspection_endpoint"`
+	DiscoveryEndpoint     string `json:"discovery_endpoint"`
 }
 
 // A Client manages communication with HSDP IAM API
 type Client struct {
 	// HTTP client used to communicate with the API.
 	iamClient *iam.Client
+	client    *http.Client
 
 	config *Config
 
 	baseURL *url.URL
 
-	// User agent used when communicating with the HSDP IAM API.
+	Endpoints DiscoveryEndpoints
+
+	// User agent used when communicating with the API server.
 	UserAgent string
 
 	debugFile *os.File
-
-	Policy *PolicyService
-	Access *AccessService
+	/*
+		Policy *PolicyService
+		Access *AccessService
+	*/
 }
 
-// NewClient returns a new HSDP Credenials API client. A configured IAM
+// NewClient returns a new CCE API client. A configured IAM
 // client must be provided
-func NewClient(iamClient *iam.Client, config *Config) (*Client, error) {
-	return newClient(iamClient, config)
+func NewClient(httpClient *http.Client, config *Config) (*Client, error) {
+	return newClient(httpClient, config)
 }
 
-func newClient(iamClient *iam.Client, config *Config) (*Client, error) {
-	c := &Client{iamClient: iamClient, config: config, UserAgent: userAgent}
+func newClient(httpClient *http.Client, config *Config) (*Client, error) {
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+	c := &Client{client: httpClient, config: config, UserAgent: userAgent}
 	if err := c.SetBaseURL(c.config.BaseURL); err != nil {
 		return nil, err
 	}
-	if config.DebugLog != "" {
+	// Debug
+	if c.config.DebugLog != "" {
 		var err error
-		c.debugFile, err = os.OpenFile(config.DebugLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		debugFile, err := os.OpenFile(config.DebugLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
-			c.debugFile = nil
+			return nil, err
 		}
+		c.debugFile = debugFile
 	}
-	c.Policy = &PolicyService{client: c, validate: validator.New()}
-	_ = c.Policy.validate.RegisterValidation("policyActions", validateActions)
 
-	c.Access = &AccessService{client: c}
+	// Endpoints
+	if err := c.Bootstrap(); err != nil {
+		return nil, err
+	}
+
+	// IAM token
+	iamClient, err := iam.NewClient(config.client, &iam.Config{
+		IAMURL:   strings.TrimSuffix(c.Endpoints.TokenEndpoint, iamTokenPath),
+		Debug:    config.Debug,
+		DebugLog: config.DebugLog,
+	})
+	if err != nil {
+		return nil, err
+	}
+	c.iamClient = iamClient
+
+	err = iamClient.ServiceLogin(iam.Service{
+		ServiceID:  config.ServiceID,
+		PrivateKey: config.PrivateKey,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	/*
+		c.Policy = &PolicyService{client: c, validate: validator.New()}
+		_ = c.Policy.validate.RegisterValidation("policyActions", validateActions)
+
+		c.Access = &AccessService{client: c}
+	*/
 
 	return c, nil
+}
+
+// Bootstrap does endpoint discovery of CCE
+func (c *Client) Bootstrap() error {
+	// Endpoints
+	u := *c.baseURL
+	// Set the encoded opaque data
+	u.Opaque = c.baseURL.Path + DiscoveryPath
+	req := &http.Request{
+		Method:     "GET",
+		URL:        &u,
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Header:     make(http.Header),
+		Host:       u.Host,
+	}
+	req.Header.Set("Api-Version", APIVersion)
+	req.Header.Set("Accept", "application/json")
+	if c.UserAgent != "" {
+		req.Header.Set("User-Agent", c.UserAgent)
+	}
+	resp, err := c.Do(req, &c.Endpoints)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return ErrDiscoveryFailed
+	}
+	return nil
 }
 
 // Close releases allocated resources of clients
 func (c *Client) Close() {
 	if c.debugFile != nil {
-		c.debugFile.Close()
+		_ = c.debugFile.Close()
 		c.debugFile = nil
 	}
 }
@@ -102,16 +179,16 @@ func (c *Client) SetBaseURL(urlStr string) error {
 	return err
 }
 
-// NewRequest creates an new S3 Credentials API request. A relative URL path can be provided in
+// NewRequest creates an new CCE API request. A relative URL path can be provided in
 // urlStr, in which case it is resolved relative to the base URL of the Client.
 // Relative URL paths should always be specified without a preceding slash. If
 // specified, the value pointed to by body is JSON encoded and included as the
 // request body.
-func (c *Client) NewRequest(method, path string, opt interface{}, options []OptionFunc) (*http.Request, error) {
-	u := *c.baseURL
-	// Set the encoded opaque data
-	u.Opaque = c.baseURL.Path + path
-
+func (c *Client) NewRequest(method, endpoint string, opt interface{}, options []OptionFunc) (*http.Request, error) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, err
+	}
 	if opt != nil {
 		q, err := query.Values(opt)
 		if err != nil {
@@ -122,7 +199,7 @@ func (c *Client) NewRequest(method, path string, opt interface{}, options []Opti
 
 	req := &http.Request{
 		Method:     method,
-		URL:        &u,
+		URL:        u,
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
 		ProtoMinor: 1,
@@ -162,8 +239,8 @@ func (c *Client) NewRequest(method, path string, opt interface{}, options []Opti
 	return req, nil
 }
 
-// Response is a HSDP IAM API response. This wraps the standard http.Response
-// returned from HSDP IAM and provides convenient access to things like errors
+// Response is a CCE API response. This wraps the standard http.Response
+// returned from CCE and provides convenient access to things like errors
 type Response struct {
 	*http.Response
 }
@@ -187,7 +264,7 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 			fmt.Println(out)
 		}
 	}
-	resp, err := c.iamClient.HttpClient().Do(req)
+	resp, err := c.client.Do(req)
 	if c.config.Debug && resp != nil {
 		dumped, _ := httputil.DumpResponse(resp, true)
 		out := fmt.Sprintf("[go-hsdp-api] --- Response start ---\n%s\n[go-hsdp-api] --- Response end ---\n", string(dumped))

@@ -46,7 +46,7 @@ func (c *Client) ServiceLogin(service Service) error {
 		scopes := strings.Join(c.config.Scopes, " ")
 		form.Add("scope", scopes)
 	}
-	// HSDP IAM currently croakes on URL encoded grant_type value. INC0038532
+	// HSDP IAM currently croaks on URL encoded grant_type value. INC0038532
 	body := "assertion=" + token
 	body += "&grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer"
 	body += "&"

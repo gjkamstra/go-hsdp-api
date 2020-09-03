@@ -112,8 +112,10 @@ func newClient(httpClient *http.Client, config *Config) (*Client, error) {
 	if err := c.SetBaseIAMURL(c.config.IAMURL); err != nil {
 		return nil, err
 	}
-	if err := c.SetBaseIDMURL(c.config.IDMURL); err != nil {
-		return nil, err
+	if c.config.IDMURL != "" {
+		if err := c.SetBaseIDMURL(c.config.IDMURL); err != nil {
+			return nil, err
+		}
 	}
 	if config.Signer == nil {
 		signer, err := hsdpsigner.New(c.config.SharedKey, c.config.SecretKey)
@@ -127,7 +129,7 @@ func newClient(httpClient *http.Client, config *Config) (*Client, error) {
 	if config.DebugLog != "" {
 		debugFile, err := os.OpenFile(config.DebugLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
-			c.debugFile = nil
+			return nil, err
 		} else {
 			c.debugFile = debugFile
 		}

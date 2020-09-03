@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -57,7 +56,7 @@ func (s *Service) GetToken(accessTokenEndpoint string) (string, error) {
 	// Decode private key
 	block, _ := pem.Decode([]byte(fixHSDPPEM(s.PrivateKey)))
 	if block == nil {
-		return "", fmt.Errorf("failed to parse privateKey")
+		return "", ErrFailedParsingPrivateKey
 	}
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
