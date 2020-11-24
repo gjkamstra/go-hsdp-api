@@ -5,6 +5,7 @@ require (
 	github.com/google/go-querystring v0.0.0-20170111101155-53e6ce116135
 	github.com/google/uuid v1.1.1
 	github.com/pelletier/go-toml v1.8.0
+	github.com/philips-forks/jwt v0.0.0-20201124163957-6b5dc2b32f47
 	github.com/philips-software/go-hsdp-signer v1.3.0
 	github.com/stretchr/testify v1.5.1
 	go.elastic.co/apm/module/apmhttp v1.8.0

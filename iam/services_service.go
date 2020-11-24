@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/philips-forks/jwt"
 )
 
 const servicesAPIVersion = "1"
@@ -60,17 +63,15 @@ func (s *Service) GetToken(accessTokenEndpoint string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// Generate JWT token
-	/*
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		"aud": accessTokenEndpoint,
-		"iss": s.ServiceID,
-		"sub": s.ServiceID,
-		"exp": time.Now().Add(time.Minute * 60).Unix(),
-	})
-	signedString, err := token.SignedString(key)
-        */
-        signedString, err := "", nil
+	// Generate JWT claim
+	claim := jwt.NewClaim()
+	claim.Set("aud", accessTokenEndpoint)
+	claim.Set("iss", s.ServiceID)
+	claim.Set("sub", s.ServiceID)
+	claim.Set("exp", time.Now().Add(time.Minute*60).Unix())
+	// TODO: finish this
+
+	signedString, err := "", nil
 	if err != nil {
 		return "", err
 	}
