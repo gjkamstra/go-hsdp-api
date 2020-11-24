@@ -78,9 +78,6 @@ func TestGroupCRUD(t *testing.T) {
 	g.Description = groupDescription
 	g.ManagingOrganization = managingOrgID
 
-	// Test validation
-	_, _, err := client.Groups.CreateGroup(g)
-	assert.NotNil(t, err)
 
 	g.Name = groupName
 	group, resp, err := client.Groups.CreateGroup(g)

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"net/http"
 
-	"github.com/go-playground/validator/v10"
 )
 
 const (
@@ -13,7 +12,6 @@ const (
 
 type PasswordPoliciesService struct {
 	client   *Client
-	validate *validator.Validate
 }
 
 type ChallengePolicy struct {
@@ -85,9 +83,6 @@ func (p *PasswordPoliciesService) UpdatePasswordPolicy(policy PasswordPolicy) (*
 
 // CreatePasswordPolicy creates a password policy
 func (p *PasswordPoliciesService) CreatePasswordPolicy(policy PasswordPolicy) (*PasswordPolicy, *Response, error) {
-	if err := p.validate.Struct(policy); err != nil {
-		return nil, nil, err
-	}
 	req, _ := p.client.NewRequest(IDM, "POST", "authorize/identity/PasswordPolicy", &policy, nil)
 	req.Header.Set("api-version", PasswordPolicyAPIVersion)
 	req.Header.Set("Content-Type", "application/json")
