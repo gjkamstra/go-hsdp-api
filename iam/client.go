@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-querystring/query"
 	"github.com/philips-software/go-hsdp-api/fhir"
 	hsdpsigner "github.com/philips-software/go-hsdp-signer"
 )
@@ -382,11 +381,14 @@ func (c *Client) NewRequest(endpoint, method, path string, opt interface{}, opti
 	}
 
 	if opt != nil {
+                // TODO: replace query with something internal
+		/*
 		q, err := query.Values(opt)
 		if err != nil {
 			return nil, err
 		}
-		u.RawQuery = q.Encode()
+		u.RawQuery = q.Encode()	
+		*/
 	}
 
 	req := &http.Request{

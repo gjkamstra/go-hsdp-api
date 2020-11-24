@@ -442,9 +442,15 @@ func TestGetRoles(t *testing.T) {
 	group.ID = groupID
 	role.ID = roleID
 	roles, resp, err := client.Groups.GetRoles(group)
-	assert.NotNil(t, resp)
-	assert.NotNil(t, roles)
-	assert.Nil(t, err)
+	if !assert.NotNil(t, resp) {
+		return
+	}
+	if !assert.NotNil(t, roles) {
+		return
+	}
+	if !assert.Nil(t, err) {
+		return
+	}
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, 1, len(*roles))
 	assert.Equal(t, roleID, (*roles)[0].ID)
