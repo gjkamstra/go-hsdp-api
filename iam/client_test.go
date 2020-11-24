@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+        "errors"
 
 	signer "github.com/philips-software/go-hsdp-signer"
 	"github.com/stretchr/testify/assert"
-	errors "golang.org/x/xerrors"
 )
 
 var (
