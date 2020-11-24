@@ -7,9 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
-
-	jwt "github.com/dgrijalva/jwt-go"
 )
 
 const servicesAPIVersion = "1"
@@ -59,11 +56,12 @@ func (s *Service) GetToken(accessTokenEndpoint string) (string, error) {
 	if block == nil {
 		return "", fmt.Errorf("failed to parse privateKey")
 	}
-	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	_, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
 		return "", err
 	}
 	// Generate JWT token
+	/*
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"aud": accessTokenEndpoint,
 		"iss": s.ServiceID,
@@ -71,6 +69,8 @@ func (s *Service) GetToken(accessTokenEndpoint string) (string, error) {
 		"exp": time.Now().Add(time.Minute * 60).Unix(),
 	})
 	signedString, err := token.SignedString(key)
+        */
+        signedString, err := "", nil
 	if err != nil {
 		return "", err
 	}
