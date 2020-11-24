@@ -17,8 +17,6 @@ import (
 	"time"
 
 	"github.com/google/go-querystring/query"
-	"github.com/google/uuid"
-	autoconf "github.com/philips-software/go-hsdp-api/config"
 	"github.com/philips-software/go-hsdp-api/fhir"
 	hsdpsigner "github.com/philips-software/go-hsdp-signer"
 )
@@ -105,7 +103,6 @@ func newClient(httpClient *http.Client, config *Config) (*Client, error) {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
-	doAutoconf(config)
 	c := &Client{client: httpClient, config: config, UserAgent: userAgent}
 	if err := c.SetBaseIAMURL(c.config.IAMURL); err != nil {
 		return nil, err
@@ -144,24 +141,6 @@ func newClient(httpClient *http.Client, config *Config) (*Client, error) {
 	c.PasswordPolicies = &PasswordPoliciesService{client: c}
 	c.Devices = &DevicesService{client: c}
 	return c, nil
-}
-
-func doAutoconf(config *Config) {
-	if config.Region != "" && config.Environment != "" {
-		c, err := autoconf.New(
-			autoconf.WithRegion(config.Region),
-			autoconf.WithEnv(config.Environment))
-		if err == nil {
-			iamService := c.Service("iam")
-			idmService := c.Service("idm")
-			if iamURL, err := iamService.GetString("url"); err == nil && config.IAMURL == "" {
-				config.IAMURL = iamURL
-			}
-			if idmURL, err := idmService.GetString("url"); err == nil && config.IDMURL == "" {
-				config.IDMURL = idmURL
-			}
-		}
-	}
 }
 
 func (c *Client) validSigner() bool {
@@ -487,7 +466,7 @@ func (c *Client) DoSigned(req *http.Request, v interface{}) (*Response, error) {
 // interface, the raw response body will be written to v, without attempting to
 // first decode it.
 func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
-	id := uuid.New()
+	id := "TODO"
 
 	if c.config.Debug {
 		dumped, _ := httputil.DumpRequest(req, true)
