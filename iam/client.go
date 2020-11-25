@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	validator "github.com/go-playground/validator/v10"
 	"github.com/google/go-querystring/query"
 	"github.com/google/uuid"
 	autoconf "github.com/philips-software/go-hsdp-api/config"
@@ -57,8 +56,7 @@ type Client struct {
 
 	config *Config
 
-	signer   *hsdpsigner.Signer
-	validate *validator.Validate
+	signer *hsdpsigner.Signer
 
 	baseIAMURL *url.URL
 	baseIDMURL *url.URL
@@ -133,19 +131,18 @@ func newClient(httpClient *http.Client, config *Config) (*Client, error) {
 		}
 	}
 
-	c.validate = validator.New()
 	c.Organizations = &OrganizationsService{client: c}
 	c.Groups = &GroupsService{client: c}
 	c.Permissions = &PermissionsService{client: c}
 	c.Roles = &RolesService{client: c}
-	c.Users = &UsersService{client: c, validate: validator.New()}
+	c.Users = &UsersService{client: c}
 	c.Applications = &ApplicationsService{client: c}
 	c.Propositions = &PropositionsService{client: c}
-	c.Clients = &ClientsService{client: c, validate: validator.New()}
+	c.Clients = &ClientsService{client: c}
 	c.Services = &ServicesService{client: c}
-	c.MFAPolicies = &MFAPoliciesService{client: c, validate: validator.New()}
-	c.PasswordPolicies = &PasswordPoliciesService{client: c, validate: validator.New()}
-	c.Devices = &DevicesService{client: c, validate: validator.New()}
+	c.MFAPolicies = &MFAPoliciesService{client: c}
+	c.PasswordPolicies = &PasswordPoliciesService{client: c}
+	c.Devices = &DevicesService{client: c}
 	return c, nil
 }
 

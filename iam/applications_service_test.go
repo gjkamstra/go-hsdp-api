@@ -52,12 +52,6 @@ func TestCreateApplication(t *testing.T) {
 		GlobalReferenceID: globalReferenceID,
 	}
 
-	// Test validation
-	_, _, err := client.Applications.CreateApplication(app)
-	if err == nil {
-		t.Error("Expected validation error")
-	}
-
 	app.Name = "TESTAPP"
 	createdApp, resp, err := client.Applications.CreateApplication(app)
 	if err != nil {

@@ -67,9 +67,6 @@ func (g *GroupsService) GetGroup(opt *GetGroupOptions, options ...OptionFunc) (*
 
 // CreateGroup creates a Group
 func (g *GroupsService) CreateGroup(group Group) (*Group, *Response, error) {
-	if err := g.client.validate.Struct(group); err != nil {
-		return nil, nil, err
-	}
 	req, err := g.client.NewRequest(IDM, "POST", "authorize/identity/Group", &group, nil)
 	if err != nil {
 		return nil, nil, err

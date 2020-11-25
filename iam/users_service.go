@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-
-	validator "github.com/go-playground/validator/v10"
 )
 
 const (
@@ -28,8 +26,6 @@ type GetUserOptions struct {
 // UsersService provides operations on IAM User resources
 type UsersService struct {
 	client *Client
-
-	validate *validator.Validate
 }
 
 // Parameters holds parameters
@@ -68,9 +64,6 @@ type UserList struct {
 
 // CreateUser creates a new IAM user.
 func (u *UsersService) CreateUser(person Person) (*User, *Response, error) {
-	if err := u.validate.Struct(person); err != nil {
-		return nil, nil, err
-	}
 	req, err := u.client.NewRequest(IDM, "POST", "authorize/identity/User", &person, nil)
 	if err != nil {
 		return nil, nil, err

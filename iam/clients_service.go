@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-
-	validator "github.com/go-playground/validator/v10"
 )
 
 var (
@@ -43,8 +41,6 @@ type ClientMeta struct {
 // ClientsService provides operations on IAM roles resources
 type ClientsService struct {
 	client *Client
-
-	validate *validator.Validate
 }
 
 // GetClientsOptions describes search criteria for looking up roles
@@ -57,9 +53,6 @@ type GetClientsOptions struct {
 
 // CreateClient creates a Client
 func (c *ClientsService) CreateClient(ac ApplicationClient) (*ApplicationClient, *Response, error) {
-	if err := c.validate.Struct(ac); err != nil {
-		return nil, nil, err
-	}
 
 	// Remove scopes before calling create
 	scopes := ac.Scopes
@@ -175,9 +168,6 @@ func (c *ClientsService) UpdateScopes(ac ApplicationClient, scopes []string, def
 
 // UpdateClient updates a client
 func (c *ClientsService) UpdateClient(ac ApplicationClient) (*ApplicationClient, *Response, error) {
-	if err := c.validate.Struct(ac); err != nil {
-		return nil, nil, err
-	}
 	req, err := c.client.NewRequest(IDM, "PUT", "authorize/identity/Client/"+ac.ID, ac, nil)
 	if err != nil {
 		return nil, nil, err

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/go-playground/validator/v10"
 )
 
 var (
@@ -68,8 +66,6 @@ type GetDevicesOptions struct {
 // DevicesService provides operations on IAM device resources
 type DevicesService struct {
 	client *Client
-
-	validate *validator.Validate
 }
 
 // GetDevices looks up Devices based on GetDevicesOptions
@@ -108,9 +104,6 @@ func (p *DevicesService) GetDeviceByID(deviceID string) (*Device, *Response, err
 // CreateDevice creates a Device
 // A user with DEVICE.WRITE permission can create devices under the organization.
 func (p *DevicesService) CreateDevice(device Device) (*Device, *Response, error) {
-	if err := p.validate.Struct(device); err != nil {
-		return nil, nil, err
-	}
 	req, _ := p.client.NewRequest(IDM, "POST", "authorize/identity/Device", device, nil)
 	req.Header.Set("api-version", deviceAPIVersion)
 
@@ -182,9 +175,6 @@ func (p *DevicesService) ChangePassword(deviceID, oldPassword, newPassword strin
 	}{
 		OldPassword: oldPassword,
 		NewPassword: newPassword,
-	}
-	if err := p.validate.Struct(body); err != nil {
-		return false, nil, err
 	}
 	return p.deviceActionV(deviceID, body, "$change-password", deviceAPIVersion)
 }

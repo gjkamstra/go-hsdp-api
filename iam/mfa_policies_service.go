@@ -3,8 +3,6 @@ package iam
 import (
 	"bytes"
 	"net/http"
-
-	validator "github.com/go-playground/validator/v10"
 )
 
 const (
@@ -14,8 +12,6 @@ const (
 
 type MFAPoliciesService struct {
 	client *Client
-
-	validate *validator.Validate
 }
 
 // GetMFAPolicyByID retrieves a MFAPolicy by ID
@@ -65,9 +61,6 @@ func (p *MFAPoliciesService) CreateMFAPolicy(policy MFAPolicy) (*MFAPolicy, *Res
 	policy.Schemas = append(policy.Schemas, "urn:ietf:params:scim:schemas:core:philips:hsdp:2.0:MFAPolicy")
 	policy.SetActive(true)
 
-	if err := p.validate.Struct(policy); err != nil {
-		return nil, nil, err
-	}
 	req, _ := p.client.NewRequest(IDM, "POST", SCIMBasePath+"MFAPolicies", &policy, nil)
 	req.Header.Set("api-version", MFAPoliciesAPIVersion)
 	req.Header.Set("Content-Type", "application/scim+json")

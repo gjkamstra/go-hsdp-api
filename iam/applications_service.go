@@ -59,9 +59,6 @@ func (a *ApplicationsService) GetApplication(opt *GetApplicationsOptions, option
 
 // CreateApplication creates a Application
 func (a *ApplicationsService) CreateApplication(app Application) (*Application, *Response, error) {
-	if err := a.client.validate.Struct(app); err != nil {
-		return nil, nil, err
-	}
 	req, err := a.client.NewRequest(IDM, "POST", "authorize/identity/Application", &app, nil)
 	if err != nil {
 		return nil, nil, err
