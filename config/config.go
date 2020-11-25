@@ -2,12 +2,10 @@
 package config
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 const (
@@ -56,19 +54,7 @@ func New(opts ...OptionFunc) (*Config, error) {
 	if config.source == nil {
 		resp, err := http.Get(CanonicalURL)
 		if err != nil || resp == nil || resp.StatusCode != http.StatusOK {
-			// Fallback to baked in copy in case github.com is down,
-			// but only if its not older than 180 days
-			if bakedInCopy, err := hsdpJson(); err != nil ||
-				bakedInCopy.info.ModTime().Before(time.Now().AddDate(0, 0, -180)) {
-				return nil, ErrUnreachableOrOutdatedConfigSource
-			} else {
-				data, err := Asset(bakedInCopy.info.Name())
-				if err != nil {
-					return nil, err
-					// Asset was not found.
-				}
-				config.source = bytes.NewReader(data)
-			}
+			return config, nil
 		} else {
 			defer resp.Body.Close()
 			config.source = resp.Body
