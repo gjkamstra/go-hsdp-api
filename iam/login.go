@@ -30,34 +30,6 @@ func (c *Client) CodeLogin(code string, redirectURI string) error {
 	return c.doTokenRequest(req)
 }
 
-// ServiceLogin logs a service in using a JWT signed with the service private key
-func (c *Client) ServiceLogin(service Service) error {
-	token, err := service.GetToken(c.accessTokenEndpoint())
-	if err != nil {
-		return err
-	}
-	// Authorize
-	req, err := c.NewRequest(IAM, "POST", "authorize/oauth2/token", nil, nil)
-	if err != nil {
-		return err
-	}
-	form := url.Values{}
-	if len(c.config.Scopes) > 0 {
-		scopes := strings.Join(c.config.Scopes, " ")
-		form.Add("scope", scopes)
-	}
-	// HSDP IAM currently croakes on URL encoded grant_type value. INC0038532
-	body := "assertion=" + token
-	body += "&grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer"
-	body += "&"
-	body += form.Encode()
-
-	req.Body = ioutil.NopCloser(strings.NewReader(body))
-	req.ContentLength = int64(len(body))
-
-	return c.doTokenRequest(req)
-}
-
 // Login logs in a user with `username` and `password`
 func (c *Client) Login(username, password string) error {
 	req, err := c.NewRequest(IAM, "POST", "authorize/oauth2/token", nil, nil)
